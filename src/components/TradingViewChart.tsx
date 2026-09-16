@@ -1,0 +1,75 @@
+import { useEffect, useRef, useState } from "react";
+
+/**
+ * TradingView Advanced Chart embed — real candlesticks for symbols with a
+ * TradingView listing (stocks, major memes). Free widget: loads their
+ * embed script into a container after mount; TradingView's own branding
+ * ships inside the widget per their embed terms. Follows the site's
+ * light/dark theme.
+ */
+export function TradingViewChart({
+  tvSymbol,
+  className,
+}: {
+  tvSymbol: string;
+  /** Overrides the default 420px height (e.g. taller chart on detail pages). */
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  // The theme lives as a class on <html> (see ThemeToggle) — watch for flips.
+  useEffect(() => {
+    const sync = () =>
+      setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light");
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.replaceChildren();
+
+    const widget = document.createElement("div");
+    widget.className = "tradingview-widget-container__widget";
+    container.appendChild(widget);
+
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      symbol: tvSymbol,
+      interval: "30",
+      theme,
+      style: "1",
+      locale: "en",
+      autosize: true,
+      hide_side_toolbar: false,
+      allow_symbol_change: false,
+      save_image: false,
+      calendar: false,
+      ...(theme === "light"
+        ? { backgroundColor: "rgba(255, 255, 255, 1)", gridColor: "rgba(0, 0, 0, 0.06)" }
+        : {}),
+      support_host: "https://www.tradingview.com",
+    });
+    container.appendChild(script);
+
+    return () => {
+      container.replaceChildren();
+    };
+  }, [tvSymbol, theme]);
+
+  return (
+    <div
+      className={`overflow-hidden rounded-xl border border-border bg-card ${className ?? "h-[420px]"}`}
+    >
+      <div ref={containerRef} className="tradingview-widget-container h-full w-full" />
+    </div>
+  );
+}
