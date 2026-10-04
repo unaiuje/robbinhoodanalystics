@@ -88,8 +88,10 @@ function Index() {
   const PAGE_SIZE = 25;
   const [page, setPage] = useState(0);
 
+  // resetScroll: false keeps the viewport where it is — switching tab (or the
+  // meme/stock filter) rewrites ?tab=…&kind=… without jumping to the top.
   const updateSearch = (patch: { tab?: MarketCategory; kind?: KindFilter }) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch }) });
+    navigate({ search: (prev) => ({ ...prev, ...patch }), resetScroll: false });
 
   const specs = blackrug?.specs ?? {};
   const voteCounts = blackrug?.voteCounts ?? {};
